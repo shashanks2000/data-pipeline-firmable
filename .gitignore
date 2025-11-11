@@ -1,0 +1,5 @@
+.venv
+.env
+initdb
+rough.ipynb
+**/__pycache__/
