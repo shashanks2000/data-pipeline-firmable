@@ -1,0 +1,4 @@
+from src.ingestion.cc_raw_data_pull import download_data_from_each_index
+from src.ingestion.cc_metadata_pull import push_metadata_to_postgres
+push_metadata_to_postgres()
+download_data_from_each_index()

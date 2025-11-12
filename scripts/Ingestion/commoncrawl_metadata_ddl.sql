@@ -1,4 +1,4 @@
-CREATE TABLE commoncrawl_metadata (
+CREATE TABLE IF NOT EXISTS commoncrawl_metadata (
     id TEXT PRIMARY KEY,                 -- e.g. 'CC-MAIN-2025-43'
     name TEXT,                           -- e.g. 'October 2025 Index'
     timegate TEXT,                       -- API base URL for Wayback access

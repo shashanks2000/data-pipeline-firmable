@@ -12,12 +12,12 @@ def download_cc_metadata() -> List[CommonCrawlMetadataSchema]:
     return [CommonCrawlMetadataSchema.model_validate(each) for each in data]
 
 
-db = next(get_db())
-try:
-    data = download_cc_metadata()
-    for item in data:
-        db.merge(CommonCrawlMetadata(**item.model_dump(by_alias=False, exclude_none=True, exclude={"created_at"})))
-    db.commit()
+def push_metadata_to_postgres(db = next(get_db())):
+    try:
+        data = download_cc_metadata()
+        for item in data:
+            db.merge(CommonCrawlMetadata(**item.model_dump(by_alias=False, exclude_none=True, exclude={"created_at"})))
+        db.commit()
 
-except Exception as e:
-    print(str(e))
+    except Exception as e:
+        print(str(e))

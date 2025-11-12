@@ -1,4 +1,4 @@
-CREATE TABLE commoncrawl_flatten (
+CREATE TABLE IF NOT EXISTS commoncrawl_flatten (
     id SERIAL PRIMARY KEY,
 
     -- Core Crawl Metadata
