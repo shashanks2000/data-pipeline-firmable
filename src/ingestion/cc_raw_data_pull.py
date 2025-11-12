@@ -15,18 +15,24 @@ from src.db import get_db
 
 
 def segment_cc_index(url: str) -> str:
-    """Extract Common Crawl segment name from URL."""
+    """
+    Extract Common Crawl segment name from URL.
+    """
     return url.rstrip("/").split("/")[-1].replace("-index", "")
 
 
 def get_all_urls(db: Session) -> list[str]:
-    """Fetch all Common Crawl API endpoints."""
+    """
+    Fetch all Common Crawl API endpoints.
+    """
     rows = db.execute(select(CommonCrawlMetadata.cdx_api)).all()
     return [r[0] for r in rows]
 
 
 def get_latest_bookmark(cc_index: str, db: Session) -> int:
-    """Fetch latest bookmark for a given Common Crawl index."""
+    """
+    Fetch latest bookmark for a given Common Crawl index.
+    """
     return db.scalar(
         select(func.coalesce(IngestionHistory.bookmark, 0))
         .where(IngestionHistory.cc_index == cc_index)
@@ -34,7 +40,9 @@ def get_latest_bookmark(cc_index: str, db: Session) -> int:
 
 
 def log_bookmark(db: Session, cc_index: str, bookmark: int):
-    """Upsert bookmark in ingestion history."""
+    """
+    Upsert bookmark in ingestion history.
+    """
     log = IngestionHistorySchema(
         cc_index=cc_index,
         bookmark=bookmark,
@@ -47,7 +55,9 @@ def log_bookmark(db: Session, cc_index: str, bookmark: int):
 
 
 def save_records_as_gzipped_parquet(records, segment: str, page: int, db: Session):
-    """Convert records -> Parquet -> Gzip -> Insert RawData."""
+    """
+    Convert records -> Parquet -> Gzip -> Insert RawData.
+    """
     if not records:
         return
 
@@ -80,7 +90,9 @@ def save_records_as_gzipped_parquet(records, segment: str, page: int, db: Sessio
 
 
 def download_data_from_each_index(db: Session = next(get_db())):
-    """Main pipeline: loop through all Common Crawl indices and download pages incrementally."""
+    """
+    Main pipeline: loop through all Common Crawl indices and download pages incrementally.
+    """
     urls = get_all_urls(db)
     # urls = ['https://index.commoncrawl.org/CC-MAIN-2025-43-index']
     urls.sort()
@@ -93,7 +105,7 @@ def download_data_from_each_index(db: Session = next(get_db())):
 
         while True:
             uri = f"{url}?url=*.au&output=json&filter=statuscode:200&page={page}"
-            print(f"🔽 Fetching {uri}")
+            print(f"Fetching {uri}")
 
             try:
                 response = requests.get(uri, stream=True, timeout=60)
@@ -101,11 +113,9 @@ def download_data_from_each_index(db: Session = next(get_db())):
                     try:
                         msg = response.json().get("message")
                         if msg:
-                            print(f"🛑 End of pages: {msg}")
                             log_bookmark(db, segment, page - 1)
                             break
                     except json.JSONDecodeError:
-                        print("🛑 End of pages (400 without JSON).")
                         log_bookmark(db, segment, page - 1)
                         break
 
@@ -115,7 +125,6 @@ def download_data_from_each_index(db: Session = next(get_db())):
                 records = [json.loads(line) for line in response.iter_lines(decode_unicode=True) if line]
 
                 if not records:
-                    print(f"⚠️ No records on page {page}. Ending segment.")
                     log_bookmark(db, segment, page - 1)
                     break
 
@@ -123,18 +132,18 @@ def download_data_from_each_index(db: Session = next(get_db())):
                 page += 1
 
             except requests.exceptions.ChunkedEncodingError:
-                print(f"⚠️ Connection dropped on page {page}, retrying...")
+                print(f"Connection dropped on page {page}, retrying...")
                 continue  # retry same page
 
             except requests.exceptions.RequestException as e:
-                print(f"❌ Request error: {e}")
+                print(f"Request error: {e}")
                 log_bookmark(db, segment, page - 1)
                 break
 
             except Exception as e:
                 db.rollback()
-                print(f"❌ Fatal error on {segment}, page {page}: {e}")
+                print(f"Fatal error on {segment}, page {page}: {e}")
                 log_bookmark(db, segment, page - 1)
                 break
 
-        print(f"🏁 Completed segment={segment} last bookmark={page - 1}")
+        print(f"Completed segment={segment} last bookmark={page - 1}")

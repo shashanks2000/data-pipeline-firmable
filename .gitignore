@@ -3,3 +3,4 @@
 initdb
 rough.ipynb
 **/__pycache__/
+logs
