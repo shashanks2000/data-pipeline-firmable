@@ -7,7 +7,7 @@ imports inside your project work as expected.
 
 from datetime import datetime, timedelta
 from airflow import DAG
-from airflow.operators.bash import BashOperator
+from airflow.providers.standard.operators.bash import BashOperator
 
 
 default_args = {
@@ -23,7 +23,7 @@ with DAG(
     default_args=default_args,
     description='Run project main.py daily',
     start_date=datetime(2025, 1, 1),
-    schedule_interval='@daily',
+    schedule='@daily',
     catchup=False,
     tags=['project', 'run-main'],
 ) as dag:
