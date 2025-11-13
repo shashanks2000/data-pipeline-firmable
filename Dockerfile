@@ -1,6 +1,5 @@
 
-ARG AIRFLOW_IMAGE=apache/airflow:2.9.3
-FROM ${AIRFLOW_IMAGE}
+FROM apache/airflow:3.1.2
 
 # Allow builds to run package updates only when apt-get is available. This helps
 # reduce some OS-level vulnerabilities while remaining compatible with different
