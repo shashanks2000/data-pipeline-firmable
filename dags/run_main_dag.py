@@ -31,7 +31,7 @@ with DAG(
     run_main = BashOperator(
         task_id='run_main_script',
         # -u for unbuffered output so logs appear promptly in Airflow UI
-        bash_command='python -u /opt/airflow/project/main.py',
+        bash_command='python -u /opt/airflow/project/main.py 2>&1',
         env={
             'PYTHONPATH': '/opt/airflow/project',
         },
