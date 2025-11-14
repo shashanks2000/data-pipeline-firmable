@@ -1,7 +1,7 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, declarative_base
 
-db_config = "postgresql+psycopg2://airflow:airflow@postgres:5432/appdb"
+db_config = "postgresql+psycopg2://airflow:airflow@postgres/appdb"
 engine = create_engine(
     db_config,
     pool_size=20,

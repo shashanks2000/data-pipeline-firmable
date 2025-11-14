@@ -50,6 +50,5 @@ logs/
 Thumbs.db
 
 # Other
-.env
 .env.local
 node_modules/
