@@ -43,15 +43,18 @@ def log_bookmark(db: Session, cc_index: str, bookmark: int):
     """
     Upsert bookmark in ingestion history.
     """
+    # Ensure bookmark never goes negative
+    safe_bookmark = max(0, bookmark)
+    
     log = IngestionHistorySchema(
         cc_index=cc_index,
-        bookmark=bookmark,
+        bookmark=safe_bookmark,
         created_at=datetime.now(timezone.utc),
         last_updated=datetime.now(timezone.utc),
     )
     db.merge(IngestionHistory(**log.model_dump(exclude={"created_at", "last_updated"})))
     db.commit()
-    print(f"📘 Logged bookmark={bookmark} for {cc_index}")
+    print(f"📘 Logged bookmark={safe_bookmark} for {cc_index}")
 
 
 def save_records_as_gzipped_parquet(records, segment: str, page: int, db: Session):
@@ -113,10 +116,13 @@ def download_data_from_each_index(db: Session = next(get_db())):
                     try:
                         msg = response.json().get("message")
                         if msg:
-                            log_bookmark(db, segment, page - 1)
+                            # Only log if we've made progress (page > 0)
+                            if page > 0:
+                                log_bookmark(db, segment, page - 1)
                             break
                     except json.JSONDecodeError:
-                        log_bookmark(db, segment, page - 1)
+                        if page > 0:
+                            log_bookmark(db, segment, page - 1)
                         break
 
                 response.raise_for_status()
@@ -125,7 +131,9 @@ def download_data_from_each_index(db: Session = next(get_db())):
                 records = [json.loads(line) for line in response.iter_lines(decode_unicode=True) if line]
 
                 if not records:
-                    log_bookmark(db, segment, page - 1)
+                    # Only log if we've made progress (page > 0)
+                    if page > 0:
+                        log_bookmark(db, segment, page - 1)
                     break
 
                 save_records_as_gzipped_parquet(records, segment, page, db)
@@ -137,13 +145,15 @@ def download_data_from_each_index(db: Session = next(get_db())):
 
             except requests.exceptions.RequestException as e:
                 print(f"Request error: {e}")
-                log_bookmark(db, segment, page - 1)
+                if page > 0:
+                    log_bookmark(db, segment, page - 1)
                 break
 
             except Exception as e:
                 db.rollback()
                 print(f"Fatal error on {segment}, page {page}: {e}")
-                log_bookmark(db, segment, page - 1)
+                if page > 0:
+                    log_bookmark(db, segment, page - 1)
                 break
 
-        print(f"Completed segment={segment} last bookmark={page - 1}")
+        print(f"Completed segment={segment} last bookmark={page - 1 if page > 0 else 0}")
