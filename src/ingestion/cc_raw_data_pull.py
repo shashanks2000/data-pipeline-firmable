@@ -98,7 +98,7 @@ def download_data_from_each_index(db: Session = next(get_db())):
     """
     urls = get_all_urls(db)
     # urls = ['https://index.commoncrawl.org/CC-MAIN-2025-43-index']
-    urls.sort()
+    # urls.sort()
 
     for url in urls:
         segment = segment_cc_index(url)
